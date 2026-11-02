@@ -6,6 +6,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _env_or_secret(name: str, default: str = "") -> str:
+    """优先读环境变量；Streamlit Cloud 部署时兜底读 st.secrets 注入的密钥"""
+    v = os.getenv(name)
+    if v:
+        return v
+    try:
+        import streamlit as st
+        return str(st.secrets.get(name, default))
+    except Exception:
+        return default
+
 # ---------- 路径 ----------
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -15,7 +27,7 @@ CACHE_DIR = DATA_DIR / "cache"              # 表格序列化等缓存
 KNOWLEDGE_FILE = DATA_DIR / "knowledge.jsonl"  # 对话沉淀知识
 
 # ---------- DashScope ----------
-DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY", "")
+DASHSCOPE_API_KEY = _env_or_secret("DASHSCOPE_API_KEY")
 DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 LLM_MODEL = os.getenv("FINQA_LLM_MODEL", "qwen-plus")
@@ -33,7 +45,7 @@ PARSE_PAGE_BATCH = 200
 # 表格 LLM 序列化并发数（I/O 密集，并发可数倍提速入库）
 TABLE_SERIAL_WORKERS = int(os.getenv("FINQA_TABLE_SERIAL_WORKERS", "6"))
 # 云端 MinerU（mineru.net）精准解析 API：https://mineru.net 注册后申请 Token
-MINERU_API_TOKEN = os.getenv("MINERU_API_TOKEN", "")
+MINERU_API_TOKEN = _env_or_secret("MINERU_API_TOKEN")
 # 云端解析模型版本: vlm（官方推荐，质量高）| pipeline（更快）
 MINERU_MODEL_VERSION = os.getenv("FINQA_MINERU_MODEL", "vlm")
 

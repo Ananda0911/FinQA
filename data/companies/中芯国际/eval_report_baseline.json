@@ -1,0 +1,117 @@
+{
+ "retrieval": {
+  "hit@5": 1.0,
+  "mrr": 0.8875,
+  "n": 20,
+  "ranks": [
+   1,
+   1,
+   2,
+   1,
+   1,
+   1,
+   2,
+   1,
+   1,
+   1,
+   1,
+   1,
+   2,
+   1,
+   4,
+   1,
+   1,
+   1,
+   1,
+   1
+  ]
+ },
+ "generation": [
+  {
+   "q": "中芯国际未来的ASP会回到什么状态？",
+   "type": "numeric",
+   "ok": true,
+   "answer_head": "N/A（资料中仅定性描述ASP将回归“健康的长期的ASP”，未提供任何具体数值、单位或对应报告期）",
+   "latency": 14.8,
+   "correctness": 5,
+   "groundedness": 5,
+   "citation": 0,
+   "comment": "回答准确指出资料未提供具体数值，仅定性描述“健康的长期的ASP”，完全忠实于参考资料；但未标注任何引用标记（如[资料1]）或页码， citation 得分为0。"
+  },
+  {
+   "q": "中芯国际在哪些城市建有8英寸和12英寸晶圆厂？",
+   "type": "list",
+   "ok": true,
+   "answer_head": "上海 [资料1]  \n北京 [资料1]  \n天津 [资料1]  \n深圳 [资料1]",
+   "latency": 16.2,
+   "correctness": 5,
+   "groundedness": 5,
+   "citation": 5,
+   "comment": "回答完全忠实于参考资料第6页明确列出的四座城市（上海、北京、天津、深圳），均标注[资料1]且未添加任何外部信息或推测。"
+  },
+  {
+   "q": "中芯国际目前在国内建有多少座12寸晶圆厂？",
+   "type": "numeric",
+   "ok": true,
+   "answer_head": "3座 | 当前时点",
+   "latency": 11.3,
+   "correctness": 5,
+   "groundedness": 5,
+   "citation": 2,
+   "comment": "回答“3座”完全正确且严格源自参考资料，但未标注引用来源[资料1]及页码“第3页”， citation项扣分"
+  },
+  {
+   "q": "中芯国际一季度的毛利率是多少？",
+   "type": "numeric",
+   "ok": true,
+   "answer_head": "22.5% | 2025年第一季度 | 环比下降0.1个百分点",
+   "latency": 11.5,
+   "correctness": 2,
+   "groundedness": 2,
+   "citation": 0,
+   "comment": "毛利率数值22.5%正确，但‘环比下降0.1个百分点’与参考资料‘环比持平’直接矛盾；未注明数据来源页码，且添加了参考资料未提及的‘2025年第一季度’（资料未说明年份，纪要语境无法推定为2025年），属无依据编造。"
+  },
+  {
+   "q": "中芯国际2025年一季度中国区收入占总收入的比例是多少？",
+   "type": "numeric",
+   "ok": true,
+   "answer_head": "84% + 无单位（比例） + 2025年一季度  \n（注：比例为无量纲数值，按惯例不写“%”作为单位，但题干示例含“%”，且财务语境中“84%”即标准比例表达；根据题干示例“数值 + 单位 + 报告期”，此处“%”视为单位）  \n→ 84",
+   "latency": 15.8,
+   "correctness": 5,
+   "groundedness": 5,
+   "citation": 2,
+   "comment": "回答数值84%完全正确且严格源自参考资料（第10页明确载明“中国、美国、欧亚占比分别为84%、13%和3%”），无编造；但未标注引用来源[资料10]及页码， citation得分扣减"
+  },
+  {
+   "q": "中芯国际未来几年每年新增多少片12英寸晶圆产能？",
+   "type": "numeric",
+   "ok": true,
+   "answer_head": "5万片/年 | 未来3~5年",
+   "latency": 9.4,
+   "correctness": 5,
+   "groundedness": 5,
+   "citation": 0,
+   "comment": "回答准确提取了参考资料中‘每年5万片12英寸上下’及‘未来3~5年’的关键信息，无编造，但未标注任何引用来源（如[资料17]或页码），不符合 citation 要求。"
+  }
+ ],
+ "na_test": [
+  {
+   "q": "中芯国际 2030 年的营收目标是多少？",
+   "answer_head": "N/A（资料中未披露中芯国际2030年营收目标）",
+   "hallucinated": false,
+   "proper_na": true
+  },
+  {
+   "q": "中芯国际现任董事长配偶的姓名是什么？",
+   "answer_head": "N/A",
+   "hallucinated": false,
+   "proper_na": true
+  },
+  {
+   "q": "中芯国际 2024 年财报的审计意见类型是什么？",
+   "answer_head": "N/A（资料中未披露中芯国际2024年财报的审计意见类型）",
+   "hallucinated": false,
+   "proper_na": true
+  }
+ ]
+}

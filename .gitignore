@@ -1,8 +1,13 @@
 # 密钥（绝不提交）
 .env
+.streamlit/secrets.toml
 
-# 运行时数据（知识库索引/缓存/日志，均为可重建的派生数据）
-data/
+# 运行时数据（日志/缓存/沉淀知识/评估报告，可重建不入库）
+# 注意：data/companies 与 data/graph 为预建知识库，随仓库部署在线 demo，需保留
+data/logs/
+data/cache/
+data/knowledge.jsonl
+data/acceptance_report.json
 
 # 测试用财报 PDF（版权文档，不入库）
 测试文档/
