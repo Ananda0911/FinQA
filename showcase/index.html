@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>企业级财报智能问答系统 FinQA | RAG · GraphRAG · 引用溯源</title>
+<style>
+:root{
+  --bg:#0b1020;--bg2:#0f1729;--card:#131c33;--line:#233252;
+  --txt:#e8eefc;--sub:#93a4c8;--accent:#4f7cff;--accent2:#37d4a0;
+  --gold:#f5b84c;--red:#ff6b7a;--purple:#a78bfa;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;line-height:1.7}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+section{padding:72px 0;border-bottom:1px solid var(--line)}
+h1{font-size:clamp(28px,4.5vw,44px);letter-spacing:.5px}
+h2{font-size:26px;margin-bottom:8px}
+.sub{color:var(--sub)}
+.kicker{color:var(--accent);font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px}
+
+/* hero */
+.hero{padding:96px 0 72px;text-align:center;background:
+ radial-gradient(600px 300px at 20% 0%,rgba(79,124,255,.16),transparent),
+ radial-gradient(600px 300px at 80% 10%,rgba(55,212,160,.10),transparent)}
+.badges{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:26px 0 34px}
+.badge{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 16px;font-size:13px;color:var(--sub)}
+.badge b{color:var(--txt);font-weight:600}
+.hero p.lead{max-width:720px;margin:0 auto;color:var(--sub);font-size:17px}
+
+/* metrics */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-top:36px}
+.metric{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 16px;text-align:center}
+.metric .num{font-size:32px;font-weight:800;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.metric .lbl{font-size:13px;color:var(--sub);margin-top:4px}
+
+/* pipeline svg */
+.pipe{width:100%;height:auto;margin-top:32px;border-radius:16px}
+
+/* cards grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin-top:36px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px}
+.card h3{font-size:17px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.card p{font-size:14px;color:var(--sub)}
+.emoji{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;background:rgba(79,124,255,.14);flex:none}
+.card ul{margin:10px 0 0 18px;font-size:13.5px;color:var(--sub)}
+.card li{margin:5px 0}
+.card code{background:#0d1428;border:1px solid var(--line);padding:1px 6px;border-radius:6px;font-size:12px;color:var(--accent2)}
+
+/* chat mockup */
+.chat{max-width:760px;margin:36px auto 0;background:var(--bg2);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.45)}
+.chat-top{padding:12px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--sub)}
+.dot{width:11px;height:11px;border-radius:50%}
+.msg{padding:16px 22px;border-bottom:1px solid var(--line)}
+.msg.user{color:var(--txt);font-weight:600}
+.msg.bot{color:var(--sub);font-size:14px}
+.msg .ans{color:var(--txt)}
+.caret{display:inline-block;width:8px;height:16px;background:var(--accent2);vertical-align:-2px;margin-left:2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.cites{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px}
+.cite{font-size:12px;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:5px 12px;color:var(--sub)}
+.cite b{color:var(--gold);font-weight:600}
+.na{border:1px dashed var(--red);color:var(--red);border-radius:10px;padding:10px 14px;font-size:13px;display:inline-block;margin-top:8px}
+
+/* quality list */
+.qgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:30px}
+.q{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;font-size:14px;color:var(--sub)}
+.q b{color:var(--txt);display:block;margin-bottom:6px;font-size:15px}
+.q .ok{color:var(--accent2);font-weight:700}
+
+footer{padding:44px 0 64px;text-align:center;color:var(--sub);font-size:13px}
+footer .t{color:var(--txt);font-weight:600;font-size:15px;margin-bottom:6px}
+a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">RAG · GraphRAG · Enterprise Finance QA</div>
+    <h1>企业级财报智能问答系统</h1>
+    <p class="lead">面向年报、券商研报、机构调研纪要的智能问答系统：混合检索精排、分题型结构化生成、强制引用溯源、N/A 防编造闸门、流式输出——让每个财务数字都可回溯到原文页码。</p>
+    <div class="badges">
+      <span class="badge"><b>Python 3.12</b> · Streamlit</span>
+      <span class="badge"><b>FAISS</b> 向量 + <b>BM25</b> 关键词双路召回</span>
+      <span class="badge"><b>Rerank</b> 精排 · Small-to-Big</span>
+      <span class="badge"><b>Qwen</b> 分题型 Prompt 工程</span>
+      <span class="badge"><b>MinerU VLM</b> 云端高精度解析</span>
+      <span class="badge"><b>GraphRAG</b> 实体图谱归纳</span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="kicker">Evaluated on Real Corpora</div>
+    <h2>实测指标（真实财报语料 · LLM-as-Judge 评审）</h2>
+    <p class="sub">知识库：中芯国际 2024 年年度报告（222 页）+ 券商深度研报 + 机构调研纪要，共 831 个切片。全部指标来自真实 API 端到端实测。</p>
+    <div class="metrics">
+      <div class="metric"><div class="num">100%</div><div class="lbl">检索 Hit@5（20 题）</div></div>
+      <div class="metric"><div class="num">0.90</div><div class="lbl">MRR 平均排名 1.3</div></div>
+      <div class="metric"><div class="num">5.0/5</div><div class="lbl">LLM 评审答案正确性</div></div>
+      <div class="metric"><div class="num">5/5</div><div class="lbl">N/A 防编造闸门</div></div>
+      <div class="metric"><div class="num">0.7s</div><div class="lbl">流式输出首字延迟</div></div>
+      <div class="metric"><div class="num">831</div><div class="lbl">切片 · 3 份文档实测</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="kicker">Architecture</div>
+    <h2>系统架构 · 检索生成全链路</h2>
+    <svg class="pipe" viewBox="0 0 1000 330" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, PingFang SC, sans-serif">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#4f7cff"/></marker>
+        <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#182342"/><stop offset="1" stop-color="#131c33"/></linearGradient>
+      </defs>
+      <style>
+        .bx{fill:url(#g1);stroke:#233252;rx:12}
+        .t1{fill:#e8eefc;font-size:14px;font-weight:600}
+        .t2{fill:#93a4c8;font-size:11px}
+      </style>
+      <!-- Row 1 -->
+      <g>
+        <rect class="bx" x="20" y="24" width="180" height="64" rx="12"/>
+        <text class="t1" x="110" y="50" text-anchor="middle">PDF 解析层</text>
+        <text class="t2" x="110" y="70" text-anchor="middle">MinerU 云端 VLM / PyMuPDF 回退</text>
+        <rect class="bx" x="250" y="24" width="180" height="64" rx="12"/>
+        <text class="t1" x="340" y="50" text-anchor="middle">表格 LLM 序列化</text>
+        <text class="t2" x="340" y="70" text-anchor="middle">6 路并发 · 磁盘缓存 · 失败重试</text>
+        <rect class="bx" x="480" y="24" width="180" height="64" rx="12"/>
+        <text class="t1" x="570" y="50" text-anchor="middle">按公司路由索引</text>
+        <text class="t2" x="570" y="70" text-anchor="middle">FAISS · BM25 · Doc2Query</text>
+        <rect class="bx" x="710" y="24" width="180" height="64" rx="12"/>
+        <text class="t1" x="800" y="50" text-anchor="middle">分块</text>
+        <text class="t2" x="800" y="70" text-anchor="middle">500 字 / 重叠 60（A/B 实验选定）</text>
+        <line x1="200" y1="56" x2="248" y2="56" stroke="#4f7cff" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="430" y1="56" x2="478" y2="56" stroke="#4f7cff" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="660" y1="56" x2="708" y2="56" stroke="#4f7cff" stroke-width="2" marker-end="url(#ar)"/>
+      </g>
+      <!-- Row 2 retrieval -->
+      <g>
+        <line x1="800" y1="88" x2="800" y2="120" stroke="#4f7cff" stroke-width="2" marker-end="url(#ar)"/>
+        <rect class="bx" x="20" y="122" width="270" height="64" rx="12" stroke="#37d4a0"/>
+        <text class="t1" x="155" y="148" text-anchor="middle" fill="#37d4a0">三路召回 + 加权融合</text>
+        <text class="t2" x="155" y="168" text-anchor="middle">向量 / BM25 / 扩展问题 → 归一化加权</text>
+        <rect class="bx" x="330" y="122" width="200" height="64" rx="12" stroke="#37d4a0"/>
+        <text class="t1" x="430" y="148" text-anchor="middle" fill="#37d4a0">Rerank 精排</text>
+        <text class="t2" x="430" y="168" text-anchor="middle">gte-rerank-v2 · Top-5</text>
+        <rect class="bx" x="570" y="122" width="200" height="64" rx="12" stroke="#37d4a0"/>
+        <text class="t1" x="670" y="148" text-anchor="middle" fill="#37d4a0">Small-to-Big</text>
+        <text class="t2" x="670" y="168" text-anchor="middle">切片命中 → 回捞父页面全文</text>
+        <line x1="290" y1="154" x2="328" y2="154" stroke="#37d4a0" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="530" y1="154" x2="568" y2="154" stroke="#37d4a0" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="700" y1="120" x2="230" y2="188" stroke="#37d4a0" stroke-width="0"/>
+      </g>
+      <!-- Row 3 generation -->
+      <g>
+        <line x1="670" y1="186" x2="670" y2="218" stroke="#4f7cff" stroke-width="2" marker-end="url(#ar)"/>
+        <rect class="bx" x="20" y="220" width="300" height="64" rx="12" stroke="#a78bfa"/>
+        <text class="t1" x="170" y="246" text-anchor="middle" fill="#a78bfa">问题分类（qwen-flash 0.4s）</text>
+        <text class="t2" x="170" y="266" text-anchor="middle">数值 / 布尔 / 名单 / 对比 / 开放归纳</text>
+        <rect class="bx" x="360" y="220" width="280" height="64" rx="12" stroke="#a78bfa"/>
+        <text class="t1" x="500" y="246" text-anchor="middle" fill="#a78bfa">分题型结构化 Prompt</text>
+        <text class="t2" x="500" y="266" text-anchor="middle">强制 CoT · 口径不符返回 N/A · 逐字复述趋势</text>
+        <rect class="bx" x="680" y="220" width="210" height="64" rx="12" stroke="#f5b84c"/>
+        <text class="t1" x="785" y="246" text-anchor="middle" fill="#f5b84c">流式生成 + 引用溯源</text>
+        <text class="t2" x="785" y="266" text-anchor="middle">[资料n] → 文档名 · 页码</text>
+        <line x1="320" y1="252" x2="358" y2="252" stroke="#a78bfa" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="640" y1="252" x2="678" y2="252" stroke="#a78bfa" stroke-width="2" marker-end="url(#ar)"/>
+      </g>
+      <!-- ops lane -->
+      <g>
+        <rect x="20" y="298" width="870" height="26" rx="13" fill="rgba(79,124,255,.08)" stroke="#233252"/>
+        <text class="t2" x="455" y="315" text-anchor="middle">运维闭环：Doc2Query 问题扩展 · 知识库健康度（指标缺失/口径冲突检测）· 对话知识沉淀 · GraphRAG Local/Global · 切片 A/B 实验 · 错误自动落盘</text>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="kicker">Product</div>
+    <h2>一次真实的问答（界面实录重绘）</h2>
+    <div class="chat">
+      <div class="chat-top">
+        <span class="dot" style="background:#37d4a0"></span>已连接 · 中芯国际（3 份文档 · 831 切片）
+      </div>
+      <div class="msg user">中芯国际2024年的营业收入是多少？</div>
+      <div class="msg bot">
+        <span class="ans">57,795,570 千元<span class="caret"></span></span>
+        <div class="cites">
+          <span class="cite"><b>资料1</b> 中芯国际2024年年度报告 · 第119页</span>
+          <span class="cite"><b>资料2</b> 中芯国际2024年年度报告 · 第23页</span>
+          <span class="cite"><b>资料3</b> 中芯国际2024年年度报告 · 第5页</span>
+        </div>
+      </div>
+      <div class="msg user">中芯国际2030年的营业收入目标是多少？</div>
+      <div class="msg bot">
+        <span class="na">N/A —— 资料中未提供 2030 年营业收入目标，所有引用资料最远仅涉及 2027 年预测。拒绝编造。</span>
+      </div>
+      <div class="chat-top" style="border-top:1px solid var(--line);border-bottom:none">
+        ✓ 答案确认无误后可沉淀为知识 · 下次同类问题直接命中
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="kicker">Modules</div>
+    <h2>核心模块</h2>
+    <div class="grid">
+      <div class="card">
+        <h3><span class="emoji">📄</span>财报解析</h3>
+        <p>222 页年报云端 VLM 解析（自动分片、结果哈希缓存），LLM 表格序列化把"营收 | 45,090 | 36,732"改写成可检索的事实句。</p>
+        <ul><li>MinerU 云端 / 本地 / PyMuPDF 三后端自动路由</li><li>6 路并发 + 指数退避重试 + 质量门控缓存</li></ul>
+      </div>
+      <div class="card">
+        <h3><span class="emoji">🔍</span>混合检索</h3>
+        <p>向量 + BM25 + 扩展问题三路召回，加权融合后 Rerank 精排，Small-to-Big 回捞父页面保证上下文完整。</p>
+        <ul><li>按公司隔离索引，支持跨公司对比题</li><li>实测 Hit@5 100%、MRR 0.90</li></ul>
+      </div>
+      <div class="card">
+        <h3><span class="emoji">🧠</span>分题型生成</h3>
+        <p>五类题型各有结构化 Prompt：强制思维链、强制引用、趋势表述逐字复述原文、口径不符一律 N/A。</p>
+        <ul><li>防编造闸门 5/5 全部正确拒绝</li><li>qwen-flash 快速分类（0.41s，与 qwen-plus 判定一致率 10/11）</li></ul>
+      </div>
+      <div class="card">
+        <h3><span class="emoji">🛠️</span>运维闭环</h3>
+        <p>把"上线后怎么维护"做成了功能：知识库体检、A/B 实验、知识沉淀、GraphRAG 归纳。</p>
+        <ul><li>健康检查实测发现跨文档口径冲突（营收 57,108 vs 57,796 百万元）</li><li>切片 A/B：500/60 优于 800/100（Hit@5 0.80 vs 0.70）</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="kicker">Engineering Quality</div>
+    <h2>工程质量</h2>
+    <div class="qgrid">
+      <div class="q"><b>真实语料回归测试</b>每次改动跑 5 大项回归（后端路由 / 问答评估对照基线 / 缓存重入库 / 年报入库 / 健康检查），全部指标无退化才合入。</div>
+      <div class="q"><b>并发与线程安全</b>定位并修复 Streamlit 多线程进度回调导致的 NoSessionContext 崩溃：worker 线程纯计算、UI 更新全部收敛主线程，断言保证回调 100% 主线程执行。</div>
+      <div class="q"><b>缓存体系设计</b>解析结果按文件哈希缓存（重入库零额度消耗）、表格序列化按表哈希缓存（322 条）、仅高质量结果入缓存，低质量回退不缓存待重试。</div>
+      <div class="q"><b>可观测性</b>所有页面异常自动落盘 <code>error.log</code>（堆栈 + 上下文），实测两次线上故障直接靠日志定位根因（线程安全 / 函数名笔误）。</div>
+      <div class="q"><b>性能优化</b>表格序列化串行 → 6 路并发（提速 6 倍）；问答流式输出首字 12.8s → 0.7s；分类模型 qwen-plus → qwen-flash（延迟 -55%）。</div>
+      <div class="q"><b>安全边界</b>FAISS 不支持中文路径 → 字节流落盘；API Key 仅存 .env（gitignore）；N/A 闸门防财务数字编造。</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="t">企业级财报智能问答系统 · FinQA</div>
+    独立设计并开发 · Python / Streamlit / FAISS / Qwen / MinerU · 2026<br>
+    所有指标均来自真实 API 端到端实测，可复现
+  </div>
+</footer>
+
+</body>
+</html>
